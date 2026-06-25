@@ -350,6 +350,7 @@ elif [[ "$best_type" = "Series" ]]; then
     mpv --autofit=3072x1728 --autosync=5 --mc=0 --vo=gpu "$episode_file" &
     mark_watched "$best_match" "S${next_season}E${next_episode}"
   fi
+}
 
 poll_series(){
   echo "Checking for updates across all tracked series..."
@@ -475,10 +476,11 @@ if [[ -z "$1" ]]; then
 elif [[ "$1" = "-play" ]]; then
   shift
   play_video "$*"
+elif [[ "$1" = "-search" ]]; then
+  shift
+  search_all_servers "$*"
 elif [[ "$1" = "-poll" ]]; then
   poll_series
 else
   add_id "$*"
 fi
-
-exit 0
