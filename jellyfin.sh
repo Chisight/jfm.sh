@@ -82,6 +82,41 @@ mark_watched() {
   mv "$temp_file" "$JELLYFIN_STATUS"
 }
 
+# Function: Search across all servers
+search_all_servers() {
+  local searchTerm=$(printf %s "$*" | jq -sRr @uri)
+  
+  echo "Searching across all servers for: $*"
+  echo "---"
+  
+  local found_results=0
+  
+  for server_key in "${!JELLYFIN_SERVERS[@]}"; do
+    local server="${JELLYFIN_SERVERS[$server_key]}"
+    local api_key="${JELLYFIN_KEYS[$server_key]}"
+    
+    if result=$(curl -s "$server/Search/Hints?searchTerm=$searchTerm&IncludeItemTypes=Movie,Series&limit=50&api_key=$api_key"); then
+      local hits=$(echo "$result" | jq -r '.SearchHints | length')
+      
+      if [[ $hits -gt 0 ]]; then
+        echo "[$server_key] Found $hits result(s):"
+        echo "$result" | jq -r ".SearchHints[] | \"  \(.Name) - \(.ProductionYear) - \(.Type) - ID: \(.Id)\""
+        echo ""
+        found_results=$((found_results + hits))
+      fi
+    else
+      echo "[$server_key] Error connecting to server"
+    fi
+  done
+  
+  echo "---"
+  if [[ $found_results -eq 0 ]]; then
+    echo "No results found on any server"
+  else
+    echo "Total: $found_results result(s) found"
+  fi
+}
+
 # Function: Download a movie
 download_movie() {
   local item_id="$1"
@@ -335,6 +370,10 @@ fi
 
 init_database
 
+if [[ "$1" = "-search" ]]; then
+  shift
+  search_all_servers "$@"
+
 elif [[ "$1" = "-play" ]]; then
   shift
   play_video "$*"
@@ -445,4 +484,3 @@ exit 0
 # lines starting with # are getting 6 pipe characters. "while IFS='|' read -r db_name id server_key type dl_ts last_watch watched; do" is trying to parse the line even if it's a comment.  read the line, check for comment otherwise parse and process.'
 # the last episode in a season is not going to the first episode of the next season.  (make sure a missing episode doesn't trigger going to the next season)
 # i also want a new script that takes all the files in find . | grep -v "^./youtube\|^./porn" and one by one tries to find them in on the servers.  if there are no matches to the full file (without extension) subtract a word and try again until there is only one word left.   you want a single match to add it to the .jellyfin_status.txt with an unwatched status.  if you get either no hits or you get more than one hit on a single server, do not add it to the .jellyfin_status.txt and instead add it to an notFound.txt in the current folder.
-
