@@ -351,34 +351,7 @@ elif [[ "$best_type" = "Series" ]]; then
     mark_watched "$best_match" "S${next_season}E${next_episode}"
   fi
 
-
-# Initialize database if needed
-init_database() {
-  if [[ ! -f "$JELLYFIN_STATUS" ]]; then
-    echo "# Jellyfin Status Database" > "$JELLYFIN_STATUS"
-    echo "# Format: name|id|server_key|type|download_timestamp|last_watched_timestamp|watched_status" >> "$JELLYFIN_STATUS"
-    echo "# Types: Movie, Series" >> "$JELLYFIN_STATUS"
-    echo "# watched_status: 1 for movies (watched/unwatched), S##E## for series (last episode watched)" >> "$JELLYFIN_STATUS"
-  fi
-}
-
-if [[ -z "$1" ]]; then
-  echo "Usage: $0 -search search string | -poll | -play search string | <item_id> [server_key]"
-  echo "Available servers: ${!JELLYFIN_SERVERS[@]}"
-  exit 1
-fi
-
-init_database
-
-if [[ "$1" = "-search" ]]; then
-  shift
-  search_all_servers "$@"
-
-elif [[ "$1" = "-play" ]]; then
-  shift
-  play_video "$*"
-
-elif [[ "$1" = "-poll" ]]; then
+poll_series(){
   echo "Checking for updates across all tracked series..."
   echo "---"
 
@@ -435,8 +408,9 @@ elif [[ "$1" = "-poll" ]]; then
   else
     echo "No new episodes found"
   fi
+}
 
-else
+add_id(){
   item_id="$1"
   server_key="${2}"
 
@@ -477,10 +451,34 @@ else
     echo "Error: Unknown item type '$item_type'"
     exit 1
   fi
+
+}
+
+# Initialize database if needed
+init_database() {
+  if [[ ! -f "$JELLYFIN_STATUS" ]]; then
+    echo "# Jellyfin Status Database" > "$JELLYFIN_STATUS"
+    echo "# Format: name|id|server_key|type|download_timestamp|last_watched_timestamp|watched_status" >> "$JELLYFIN_STATUS"
+    echo "# Types: Movie, Series" >> "$JELLYFIN_STATUS"
+    echo "# watched_status: 1 for movies (watched/unwatched), S##E## for series (last episode watched)" >> "$JELLYFIN_STATUS"
+  fi
+}
+
+# Initialize database
+init_database
+
+# Parse arguments
+if [[ -z "$1" ]]; then
+  echo "Usage: $0 -search search string | -poll | -play search string | <item_id> [server_key]"
+  echo "Available servers: ${!JELLYFIN_SERVERS[@]}"
+  exit 1
+elif [[ "$1" = "-play" ]]; then
+  shift
+  play_video "$*"
+elif [[ "$1" = "-poll" ]]; then
+  poll_series
+else
+  add_id "$*"
 fi
 
 exit 0
-
-# lines starting with # are getting 6 pipe characters. "while IFS='|' read -r db_name id server_key type dl_ts last_watch watched; do" is trying to parse the line even if it's a comment.  read the line, check for comment otherwise parse and process.'
-# the last episode in a season is not going to the first episode of the next season.  (make sure a missing episode doesn't trigger going to the next season)
-# i also want a new script that takes all the files in find . | grep -v "^./youtube\|^./porn" and one by one tries to find them in on the servers.  if there are no matches to the full file (without extension) subtract a word and try again until there is only one word left.   you want a single match to add it to the .jellyfin_status.txt with an unwatched status.  if you get either no hits or you get more than one hit on a single server, do not add it to the .jellyfin_status.txt and instead add it to an notFound.txt in the current folder.
