@@ -139,7 +139,7 @@ download_movie() {
   
   filepath="$download_dir/$filename"
   echo "  Downloading: $filename from $server_key"
-  wget --show-progress--progress=bar:noscroll -qcO "$filepath" "$server/Items/$item_id/Download?api_key=$api_key"
+  wget --show-progress --progress=bar:noscroll -qcO "$filepath" "$server/Items/$item_id/Download?api_key=$api_key"
   
   # Register in database
   register_item "$name" "$item_id" "$server_key" "Movie"
@@ -175,7 +175,7 @@ download_series() {
       filepath="$download_dir/$filename"
       
       echo "  Downloading: $filename"
-      wget --show-progress--progress=bar:noscroll -qcO "$filepath" "$server/Items/$episode_id/Download?api_key=$api_key"
+      wget --show-progress --progress=bar:noscroll -qcO "$filepath" "$server/Items/$episode_id/Download?api_key=$api_key"
       
       if [[ -n "$premiere" ]]; then
         touch -d "$premiere" "$filepath"
@@ -386,7 +386,7 @@ poll_series(){
         if [[ ! -f "$filepath" ]]; then
           echo "  [NEW] Downloading: $filename"
           mkdir -p "$download_dir"
-          wget --show-progress--progress=bar:noscroll -qcO "$filepath" "$server/Items/$episode_id/Download?api_key=$api_key"
+          wget --show-progress --progress=bar:noscroll -qcO "$filepath" "$server/Items/$episode_id/Download?api_key=$api_key"
           
           if [[ -n "$premiere" ]]; then
             touch -d "$premiere" "$filepath"
@@ -484,3 +484,8 @@ elif [[ "$1" = "-poll" ]]; then
 else
   add_id "$*"
 fi
+
+# lines starting with # are getting 6 pipe characters. "while IFS='|' read -r db_name id server_key type dl_ts last_watch watched; do" is trying to parse the line even if it's a comment.  read the line, check for comment otherwise parse and process.'
+# the last episode in a season is not going to the first episode of the next season.  (make sure a missing episode doesn't trigger going to the next season)
+# i also want a new script that takes all the files in find . | grep -v "^./youtube\|^./porn" and one by one tries to find them in on the servers.  if there are no matches to the full file (without extension) subtract a word and try again until there is only one word left.   you want a single match to add it to the .jellyfin_status.txt with an unwatched status.  if you get either no hits or you get more than one hit on a single server, do not add it to the .jellyfin_status.txt and instead add it to an notFound.txt in the current folder.
+
