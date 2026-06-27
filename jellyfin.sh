@@ -2,11 +2,11 @@
 #set -x
 
 # Source configuration
-if [[ ! -f "$(dirname "$0")/config.sh" ]]; then
-  echo "Error: config.sh not found. Please run: cp config.example.sh config.sh"
+if [[ ! -f "$(dirname "$0")/config_jellyfin.sh" ]]; then
+  echo "Error: config.sh not found. Please run: cp config.example.sh config_jellyfin.sh"
   exit 1
 fi
-source "$(dirname "$0")/config.sh"
+source "$(dirname "$0")/config_jellyfin.sh"
 
 # Status database file
 # Format: name|id|server_key|type|download_timestamp|last_watched_timestamp|watched_status
